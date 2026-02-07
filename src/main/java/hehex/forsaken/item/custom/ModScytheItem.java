@@ -1,27 +1,34 @@
 package hehex.forsaken.item.custom;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ToolMaterial;
+import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+
+import java.util.List;
 
 public class ModScytheItem extends ModSwordItem {
     private final float lifesteal;
 
-    public ModScytheItem(ToolMaterial toolMaterial, Item.Settings settings, float critDamageMultiplier, float lifesteal) {
-        // Pass the material, settings, and crit multiplier to the ModSwordItem (parent)
+    public ModScytheItem(ToolMaterial toolMaterial, Settings settings, float critDamageMultiplier, float lifesteal) {
         super(toolMaterial, settings, critDamageMultiplier);
         this.lifesteal = lifesteal;
     }
 
-    @Override
-    public boolean postHit(ItemStack stack, LivingEntity target, LivingEntity attacker) {
-        // Apply lifesteal if the value is greater than 0
-        if (this.lifesteal > 0) {
-            attacker.heal(this.lifesteal);
-        }
+    // Getter used by the Mixin
+    public float getLifesteal() {
+        return this.lifesteal;
+    }
 
-        // Call super to ensure standard durability loss behavior from SwordItem/ModSwordItem
-        return super.postHit(stack, target, attacker);
+    @Override
+    public void appendTooltip(ItemStack stack, TooltipContext context, List<Text> tooltip, TooltipType type) {
+        // This will add the Crit Multiplier line from ModSwordItem first
+        super.appendTooltip(stack, context, tooltip, type);
+
+        // Then add the Lifesteal line in Red
+        if (this.lifesteal > 0) {
+            tooltip.add(Text.literal("Lifesteal: " + this.lifesteal).formatted(Formatting.RED));
+        }
     }
 }

@@ -6,6 +6,7 @@
 		"ExampleMixin",
 		"PlayerEntityMixin"
 	],
+	"refmap": "forsaken-reality-refmap.json",
 	"injectors": {
 		"defaultRequire": 1
 	},
