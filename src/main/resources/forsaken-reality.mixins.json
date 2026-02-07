@@ -4,7 +4,10 @@
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
 		"ExampleMixin",
-		"PlayerEntityMixin"
+		"PlayerEntityMixin",
+		"BowItemMixin",
+		"CrossbowItemMixin",
+		"PersistentProjectileEntityMixin"
 	],
 	"refmap": "forsaken-reality-refmap.json",
 	"injectors": {
