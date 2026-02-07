@@ -1,11 +1,22 @@
 package hehex.forsaken.item.custom;
 
+import hehex.forsaken.item.IArrowStats;
 import hehex.forsaken.item.IWeaponStats;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.PersistentProjectileEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
+import net.minecraft.item.ArrowItem;
 import net.minecraft.item.BowItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.item.tooltip.TooltipType;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.stat.Stats;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import net.minecraft.world.World;
 
 import java.util.List;
 
@@ -29,10 +40,79 @@ public class ModBowItem extends BowItem implements IWeaponStats {
     public float getDrawSpeed() { return drawSpeed; }
 
     @Override
-    public int getMaxUseTime(ItemStack stack, net.minecraft.entity.LivingEntity user) {
-        // Adjust draw time based on speed (Vanilla default is 72000)
-        // We interact with pull progress math in the Mixin, but this can remain standard
-        return 72000;
+    public void onStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks) {
+        if (!(user instanceof PlayerEntity playerEntity)) {
+            return;
+        }
+
+        boolean hasProjectiles = playerEntity.getAbilities().creativeMode || !playerEntity.getProjectileType(stack).isEmpty();
+        if (!hasProjectiles) {
+            return;
+        }
+
+        // 1. Calculate Pull Progress
+        int i = this.getMaxUseTime(stack, user) - remainingUseTicks;
+        float pullProgress = getPullProgress(i); // Standard vanilla calculation
+
+        // 2. Logic: Only fire if pulled enough
+        if (!((double)pullProgress < 0.1)) {
+            ItemStack arrowStack = playerEntity.getProjectileType(stack);
+            if (arrowStack.isEmpty()) {
+                arrowStack = new ItemStack(Items.ARROW);
+            }
+
+            if (world instanceof net.minecraft.server.world.ServerWorld serverWorld) {
+                // Create the arrow entity
+                ArrowItem arrowItem = (ArrowItem)(arrowStack.getItem() instanceof ArrowItem ? arrowStack.getItem() : Items.ARROW);
+                PersistentProjectileEntity persistentProjectileEntity = arrowItem.createArrow(world, arrowStack, playerEntity, stack);
+
+                // 3. Apply Velocity (Range acts as speed here, vanilla default is ~3.0f)
+                // We multiply pullProgress by your custom range/speed factor.
+                // Vanilla uses 'pullProgress * 3.0F'. We can use 'pullProgress * this.range / 5.0F' or similar,
+                // but simpler is sticking to vanilla speed and modifying DAMAGE.
+                persistentProjectileEntity.setVelocity(playerEntity, playerEntity.getPitch(), playerEntity.getYaw(), 0.0F, pullProgress * 3.0F, 1.0F);
+
+                // --- CUSTOM DAMAGE LOGIC START ---
+                float stageMultiplier = 0.33f;
+                boolean isMaxStage = false;
+
+                if (pullProgress >= 1.0f) {
+                    stageMultiplier = 1.0f;
+                    isMaxStage = true;
+                } else if (pullProgress >= 0.6f) {
+                    stageMultiplier = 0.66f;
+                }
+
+                float arrowDamage = 0f;
+                if (arrowItem instanceof IArrowStats arrowStats) {
+                    arrowDamage = arrowStats.getArrowDamage();
+                }
+
+                // Final Damage = (Weapon Damage * Stage) + Arrow Damage
+                persistentProjectileEntity.setDamage((this.damage * stageMultiplier) + arrowDamage);
+
+                // Critical Particles on Max Stage
+                if (pullProgress == 1.0F) {
+                    persistentProjectileEntity.setCritical(true);
+                }
+                // --- CUSTOM DAMAGE LOGIC END ---
+
+                // Standard vanilla durability/sound/stats logic
+                stack.damage(1, playerEntity, LivingEntity.getSlotForHand(playerEntity.getActiveHand()));
+                world.spawnEntity(persistentProjectileEntity);
+            }
+
+            world.playSound(null, playerEntity.getX(), playerEntity.getY(), playerEntity.getZ(), SoundEvents.ENTITY_ARROW_SHOOT, SoundCategory.PLAYERS, 1.0F, 1.0F / (world.getRandom().nextFloat() * 0.4F + 1.2F) + pullProgress * 0.5F);
+
+            if (!playerEntity.getAbilities().creativeMode) {
+                arrowStack.decrement(1);
+                if (arrowStack.isEmpty()) {
+                    playerEntity.getInventory().delete(arrowStack);
+                }
+            }
+
+            playerEntity.incrementStat(Stats.USED.getOrCreateStat(this));
+        }
     }
 
     @Override
