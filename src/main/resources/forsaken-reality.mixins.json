@@ -4,10 +4,8 @@
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
 		"ExampleMixin",
-		"PlayerEntityMixin",
-		"BowItemMixin",
-		"CrossbowItemMixin",
-		"PersistentProjectileEntityMixin"
+		"PlayerEntityMixin"
+
 	],
 	"injectors": {
 		"defaultRequire": 1
