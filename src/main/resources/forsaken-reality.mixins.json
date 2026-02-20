@@ -5,10 +5,8 @@
 	"mixins": [
 		"ExampleMixin",
 		"PlayerEntityMixin",
-		"BowItemMixin",
-		"CrossbowItemMixin",
-		"PersistentProjectileEntityMixin",
-		"ArrowItemMixin"
+		"PersistentProjectileEntityMixin"
+
 
 	],
 	"injectors": {
