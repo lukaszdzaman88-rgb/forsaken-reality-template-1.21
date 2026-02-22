@@ -19,6 +19,6 @@ public class ModModelProvider extends FabricModelProvider {
 
     @Override
     public void generateItemModels(ItemModelGenerator itemModelGenerator) {
-        itemModelGenerator.register(ModItems.WOODEN_SCYTHE, Models.HANDHELD);
+itemModelGenerator.register(ModItems.EXAMPLE_WEAPON, Models.HANDHELD);
     }
 }
